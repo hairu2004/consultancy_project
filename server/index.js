@@ -1,19 +1,20 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const axios = require('axios');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import axios from 'axios';
+
 (async () => {
   const { pipeline } = await import('@xenova/transformers');
-
 })();
-const { chromium } = require('playwright');
-const { execSync } = require('child_process');
-const Groq = require('groq-sdk');
-const { exec } = require('child_process');
+import { chromium } from 'playwright';
+import { execSync } from 'child_process';
+import Groq from 'groq-sdk';
+import { exec } from 'child_process';
 
 const app = express();
 
@@ -76,7 +77,6 @@ Generate only the test code with no percentages in names.`
     }
   }
 }
-
 
 // MongoDB Schema
 const TestRunSchema = new mongoose.Schema({
@@ -147,11 +147,11 @@ async function extractText(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   try {
     if (ext === '.pdf') {
-      const pdf = require('pdf-parse');
+      const pdf = await import('pdf-parse');
       const data = await pdf(fs.readFileSync(filePath));
       return data.text;
     } else if (ext === '.docx') {
-      const mammoth = require('mammoth');
+      const mammoth = await import('mammoth');
       const result = await mammoth.extractRawText({ path: filePath });
       return result.value;
     }
@@ -209,7 +209,7 @@ function generateTestSteps(label, entities = []) {
 
 function generateTestScript(analysis) {
   let testCases = `
-    const { test, expect } = require('@playwright/test');
+    import { test, expect } from '@playwright/test';
     const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
     test.describe('Generated Tests from ${analysis.method}', () => {
@@ -294,96 +294,19 @@ app.post('/api/upload', upload.single('srsDocument'), async (req, res) => {
         features: {
           labels: analysis.categories.map(c => c.label),
           scores: analysis.categories.map(c => c.score)
-        },
-        entities: analysis.entities
+        }
       },
       testScript,
-      analysisStatus: status
+      status
     });
-
-  } catch (err) {
-    console.error('Upload error:', err.message);
-    if (req.file?.path) fs.unlinkSync(req.file.path);
-    res.status(500).json({ 
-      error: err.message.includes('Invalid file') ? err.message : 'Processing failed',
-      details: err.message
-    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
   }
 });
 
-app.get('/api/test-history', async (req, res) => {
-  try {
-    const dbReady = mongoose.connection.readyState === 1;
-    if (!dbReady) {
-      return res.status(503).json({
-        error: 'Database not ready',
-        details: 'Please wait for database connection',
-        databaseStatus: mongoose.STATES[mongoose.connection.readyState]
-      });
-    }
-
-    const history = await TestRun.find()
-      .sort({ timestamp: -1 })
-      .limit(10)
-      .maxTimeMS(5000)
-      .lean();
-
-    res.json(history || []);
-  } catch (err) {
-    console.error('History fetch error:', err);
-    res.status(500).json({
-      error: 'Failed to fetch history',
-      details: err.message,
-      databaseStatus: mongoose.STATES[mongoose.connection.readyState]
-    });
-  }
-});
-app.post('/api/run-tests', async (req, res) => {
-  try {
-    const { testScript, documentName } = req.body;
-    if (!testScript) return res.status(400).json({ error: 'No test script provided' });
-
-    // Define the path for the test script file
-    const testScriptFilePath = path.join(testDir, `${documentName}_test.spec.js`);
-
-    // Save the test script to the file
-    fs.writeFileSync(testScriptFilePath, testScript);
-
-    // Run the test script using Playwright
-    const result = await new Promise((resolve, reject) => {
-      exec(`npx playwright test ${testScriptFilePath}`, (error, stdout, stderr) => {
-        if (error) {
-          reject({ error, stderr });
-        } else {
-          resolve(stdout);
-        }
-      });
-    });
-
-    // Clean up the temporary file
-    fs.unlinkSync(testScriptFilePath);
-
-    // Send the result back to the frontend
-    res.json({ result });
-  } catch (err) {
-    console.error('Run tests error:', err.message);
-    res.status(500).json({ error: 'Failed to run tests', details: err.message });
-  }
-});
-
-app.get('/api/server-status', (req, res) => {
-  res.json({
-    status: 'running',
-    timestamp: new Date(),
-    database: mongoose.STATES[mongoose.connection.readyState],
-    services: {
-      playwright: true
-    }
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log('Playwright test generation enabled');
+// Server initialization
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
