@@ -19,11 +19,16 @@ import { exec } from 'child_process';
 const app = express();
 
 // Initialize directories
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize directories
 const uploadDir = path.join(__dirname, 'uploads');
 const testDir = path.join(__dirname, 'generated-tests');
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(testDir)) fs.mkdirSync(testDir, { recursive: true });
+
 
 // Groq API Configuration
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
