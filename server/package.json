@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "npm rebuild sharp --force",
-  "start": "node index.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +27,6 @@
     "pdf-parse": "^1.1.1",
     "sharp": "^0.34.1",
     "ws": "^8.18.1"
-  }
-  "type":"module"
+  },
+  "type": "module"
 }
