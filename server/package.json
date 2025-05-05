@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "npm rebuild sharp --force",
+  "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,7 @@
     "multer": "^1.4.5-lts.1",
     "path": "^0.12.7",
     "pdf-parse": "^1.1.1",
+    "sharp": "^0.34.1",
     "ws": "^8.18.1"
   }
 }

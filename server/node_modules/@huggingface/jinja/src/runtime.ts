@@ -36,6 +36,10 @@ export type AnyRuntimeValue =
 	| NullValue
 	| UndefinedValue;
 
+// Control-flow exceptions for loop break/continue
+class BreakControl extends Error {}
+class ContinueControl extends Error {}
+
 /**
  * Abstract base class for all Runtime values.
  * Should not be instantiated directly.
@@ -115,6 +119,32 @@ export class StringValue extends RuntimeValue<string> {
 			"lstrip",
 			new FunctionValue(() => {
 				return new StringValue(this.value.trimStart());
+			}),
+		],
+		[
+			"startswith",
+			new FunctionValue((args) => {
+				if (args.length === 0) {
+					throw new Error("startswith() requires at least one argument");
+				}
+				const prefix = args[0];
+				if (!(prefix instanceof StringValue)) {
+					throw new Error("startswith() argument must be a string");
+				}
+				return new BooleanValue(this.value.startsWith(prefix.value));
+			}),
+		],
+		[
+			"endswith",
+			new FunctionValue((args) => {
+				if (args.length === 0) {
+					throw new Error("endswith() requires at least one argument");
+				}
+				const suffix = args[0];
+				if (!(suffix instanceof StringValue)) {
+					throw new Error("endswith() argument must be a string");
+				}
+				return new BooleanValue(this.value.endsWith(suffix.value));
 			}),
 		],
 		[
@@ -1032,9 +1062,19 @@ export class Interpreter {
 			// Update scope for this iteration
 			scopeUpdateFunctions[i](scope);
 
-			// Evaluate the body of the for loop
-			const evaluated = this.evaluateBlock(node.body, scope);
-			result += evaluated.value;
+			try {
+				// Evaluate the body of the for loop
+				const evaluated = this.evaluateBlock(node.body, scope);
+				result += evaluated.value;
+			} catch (err) {
+				if (err instanceof ContinueControl) {
+					continue;
+				}
+				if (err instanceof BreakControl) {
+					break;
+				}
+				throw err;
+			}
 
 			// At least one iteration took place
 			noIteration = false;
@@ -1112,6 +1152,11 @@ export class Interpreter {
 				return this.evaluateFor(statement as For, environment);
 			case "Macro":
 				return this.evaluateMacro(statement as Macro, environment);
+
+			case "Break":
+				throw new BreakControl();
+			case "Continue":
+				throw new ContinueControl();
 
 			// Expressions
 			case "NumericLiteral":

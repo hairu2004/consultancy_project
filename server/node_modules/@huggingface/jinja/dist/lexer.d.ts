@@ -44,6 +44,8 @@ export declare const TOKEN_TYPES: Readonly<{
     Not: "UnaryOperator";
     Macro: "Macro";
     EndMacro: "EndMacro";
+    Break: "Break";
+    Continue: "Continue";
 }>;
 export type TokenType = keyof typeof TOKEN_TYPES;
 /**
