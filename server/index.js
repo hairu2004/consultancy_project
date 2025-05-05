@@ -6,7 +6,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-import { pipeline } from '@xenova/transformers';
+(async () => {
+  const { pipeline } = await import('@xenova/transformers');
+
+})();
 const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const Groq = require('groq-sdk');
